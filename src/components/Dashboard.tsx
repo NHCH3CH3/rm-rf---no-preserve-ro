@@ -13,6 +13,7 @@ import CableSaturationControl from "./activities/CableSaturationControl";
 import RadioUplinkControl from "./activities/RadioUplinkControl";
 import ELineProtectionControl from "./activities/ELineProtectionControl";
 import ErrorRateControl from "./activities/ErrorRateControl";
+import EventCreation from "./activities/EventCreation";
 import FinalReport from "./reports/FinalReport";
 
 interface DashboardProps {
@@ -121,7 +122,7 @@ const Dashboard = ({ userEmail, onLogout }: DashboardProps) => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 bg-background/10 backdrop-blur-md">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 bg-background/10 backdrop-blur-md">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-primary">
               <Wifi className="h-4 w-4 mr-2" />
               Dashboard
@@ -150,6 +151,9 @@ const Dashboard = ({ userEmail, onLogout }: DashboardProps) => {
               <Activity className="h-4 w-4 mr-2" />
               Taxa Erro
             </TabsTrigger>
+            <TabsTrigger value="create-event" className="data-[state=active]:bg-primary">
+              ➕ Criar Evento
+            </TabsTrigger>
             <TabsTrigger value="report" className="data-[state=active]:bg-primary">
               📊 Relatório
             </TabsTrigger>
@@ -174,6 +178,117 @@ const Dashboard = ({ userEmail, onLogout }: DashboardProps) => {
                     </div>
                   </div>
                 </div>
+              </Card>
+
+              {/* Gráficos do Dashboard */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <Card className="glass-card border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center space-x-2">
+                      <Activity className="h-5 w-5 text-primary" />
+                      <span>Status dos Eventos</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-32 h-32 mx-auto border-4 border-primary/30 rounded-full flex items-center justify-center mb-4">
+                          <div className="text-2xl font-bold text-primary">73%</div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Abertos:</span>
+                            <span className="text-signal-weak font-semibold">12</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Fechados:</span>
+                            <span className="text-signal-strong font-semibold">33</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass-card border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center space-x-2">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      <span>Eventos por Atividade</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {activities.map((activity, index) => (
+                        <div key={activity.id} className="flex items-center justify-between">
+                          <span className="text-sm">{activity.title.substring(0, 20)}...</span>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full ${getStatusColor(activity.status)}`}
+                                style={{ width: `${(activity.count / 15) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-semibold w-6">{activity.count}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Resumo de Eventos Abertos */}
+              <Card className="glass-card border-primary/20 mb-6">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold flex items-center space-x-2">
+                    <Shield className="h-5 w-5 text-signal-weak" />
+                    <span>Eventos Abertos - Requer Atenção</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Lista de todos os eventos em aberto que necessitam acompanhamento
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[
+                      { id: "EV-2025-001", hostname: "OLT-SP-001", city: "São Paulo", status: "Crítico", dbm: "-29.2" },
+                      { id: "EV-2025-003", hostname: "OLT-RJ-045", city: "Rio de Janeiro", status: "Alto", dbm: "-27.8" },
+                      { id: "EV-2025-007", hostname: "RADIO-MG-12", city: "Belo Horizonte", status: "Médio", dbm: "-26.1" },
+                      { id: "EV-2025-012", hostname: "OLT-PR-089", city: "Curitiba", status: "Baixo", dbm: "-25.3" }
+                    ].map((event) => (
+                      <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-background/20 border border-primary/10">
+                        <div className="flex items-center space-x-4">
+                          <Badge variant="outline" className="text-xs">
+                            {event.id}
+                          </Badge>
+                          <div>
+                            <p className="font-medium">{event.hostname}</p>
+                            <p className="text-sm text-foreground/60">{event.city}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-mono">{event.dbm} dBm</span>
+                          <Badge 
+                            className={
+                              event.status === "Crítico" ? "bg-signal-weak" :
+                              event.status === "Alto" ? "bg-signal-medium" :
+                              event.status === "Médio" ? "bg-yellow-500" : "bg-signal-strong"
+                            }
+                          >
+                            {event.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-primary/10">
+                    <div className="flex justify-between text-sm">
+                      <span>Total de eventos abertos:</span>
+                      <span className="font-semibold text-signal-weak">12 eventos</span>
+                    </div>
+                  </div>
+                </CardContent>
               </Card>
 
               {/* Activities Grid */}
@@ -231,6 +346,10 @@ const Dashboard = ({ userEmail, onLogout }: DashboardProps) => {
           
           <TabsContent value="error-rate">
             <ErrorRateControl />
+          </TabsContent>
+
+          <TabsContent value="create-event">
+            <EventCreation />
           </TabsContent>
 
           <TabsContent value="report">
