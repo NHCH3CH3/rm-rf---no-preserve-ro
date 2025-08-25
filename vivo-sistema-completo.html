@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Controle VIVO - Produtividade</title>
+    <meta name="description" content="Sistema de Controle de Produtividade VIVO - Suporte Técnico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        /* Design System */
+        :root {
+            --vivo-purple: #8b5cf6;
+            --vivo-purple-light: #a78bfa;
+            --vivo-purple-dark: #7c3aed;
+            --signal-strong: #22c55e;
+            --signal-medium: #f59e0b;
+            --signal-weak: #ef4444;
+            --background-dark: #0f172a;
+            --background-light: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--vivo-purple), var(--vivo-purple-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .glass-input:focus {
+            outline: none;
+            border-color: var(--vivo-purple);
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--vivo-purple), var(--vivo-purple-light));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--vivo-purple);
+            color: var(--vivo-purple);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-outline:hover {
+            background: var(--vivo-purple);
+            color: white;
+        }
+
+        .signal-animation {
+            animation: signal-pulse 2s infinite;
+        }
+
+        @keyframes signal-pulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        .tab-button {
+            padding: 12px 16px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-button.active {
+            background: var(--vivo-purple);
+            color: white;
+        }
+
+        .tab-button:hover {
+            background: rgba(139, 92, 246, 0.2);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active { background: var(--signal-strong); color: white; }
+        .status-warning { background: var(--signal-medium); color: white; }
+        .status-critical { background: var(--signal-weak); color: white; }
+
+        .hidden { display: none; }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pie-chart {
+            width: 120px;
+            height: 120px;
+            border: 4px solid rgba(139, 92, 246, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--vivo-purple);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .event-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .activity-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .activity-card:hover {
+            border-color: rgba(139, 92, 246, 0.4);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <!-- Background animations -->
+        <div class="absolute top-10 left-10 signal-animation">
+            <i data-lucide="radio" class="w-8 h-8 text-purple-400 opacity-20"></i>
+        </div>
+        <div class="absolute top-20 right-20 signal-animation" style="animation-delay: 0.5s">
+            <i data-lucide="wifi" class="w-6 h-6 text-purple-400 opacity-30"></i>
+        </div>
+        <div class="absolute bottom-20 left-1/4 signal-animation" style="animation-delay: 1s">
+            <i data-lucide="radio" class="w-10 h-10 text-purple-400 opacity-15"></i>
+        </div>
+
+        <div class="glass-card w-full max-w-md p-8">
+            <div class="text-center mb-8">
+                <div class="flex justify-center mb-4">
+                    <div class="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center">
+                        <span class="text-white font-bold text-xl">V</span>
+                    </div>
+                </div>
+                <h1 class="text-2xl font-bold gradient-text mb-2">Sistema de Controle VIVO</h1>
+                <p class="text-gray-400">Controle de Produtividade - Suporte Técnico</p>
+            </div>
+
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Email</label>
+                    <div class="relative">
+                        <i data-lucide="mail" class="absolute left-3 top-3 w-4 h-4 text-purple-400"></i>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            placeholder="seu.email@vivo.com"
+                            class="glass-input w-full pl-10"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Senha</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-3 top-3 w-4 h-4 text-purple-400"></i>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            placeholder="••••••••"
+                            class="glass-input w-full pl-10"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary w-full" id="loginBtn">
+                    Entrar
+                </button>
+            </form>
+
+            <div class="mt-6 text-center text-sm text-gray-400">
+                <p>Acesso restrito aos colaboradores autorizados</p>
+                <p class="mt-1">Para solicitar acesso, entre em contato com o administrador</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboardScreen" class="hidden min-h-screen">
+        <!-- Header -->
+        <header class="border-b border-purple-500/20 bg-black/10 backdrop-blur-md">
+            <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                        <span class="text-white font-bold">V</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold gradient-text">Sistema de Controle VIVO</h1>
+                        <p class="text-sm text-gray-400">Suporte Técnico - Produtividade</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <p class="text-sm font-medium" id="userEmail">user@vivo.com</p>
+                        <p class="text-xs text-gray-400">Administrador</p>
+                    </div>
+                    <button class="btn-outline" onclick="logout()">
+                        <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                        Sair
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tabs Navigation -->
+        <div class="container mx-auto px-4 py-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2 mb-6">
+                <button class="tab-button active" onclick="showTab('dashboard')">
+                    <i data-lucide="wifi" class="w-4 h-4"></i>
+                    Dashboard
+                </button>
+                <button class="tab-button" onclick="showTab('uplink-manual')">
+                    <i data-lucide="radio" class="w-4 h-4"></i>
+                    OLT Manual
+                </button>
+                <button class="tab-button" onclick="showTab('attenuation')">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i>
+                    Atenuação
+                </button>
+                <button class="tab-button" onclick="showTab('cable-saturation')">
+                    <i data-lucide="cable" class="w-4 h-4"></i>
+                    Cabos
+                </button>
+                <button class="tab-button" onclick="showTab('radio-uplink')">
+                    <i data-lucide="antenna" class="w-4 h-4"></i>
+                    Rádio
+                </button>
+                <button class="tab-button" onclick="showTab('eline-protection')">
+                    <i data-lucide="shield" class="w-4 h-4"></i>
+                    E-Line
+                </button>
+                <button class="tab-button" onclick="showTab('error-rate')">
+                    <i data-lucide="activity" class="w-4 h-4"></i>
+                    Taxa Erro
+                </button>
+                <button class="tab-button" onclick="showTab('create-event')">
+                    ➕ Criar Evento
+                </button>
+                <button class="tab-button" onclick="showTab('report')">
+                    📊 Relatório
+                </button>
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div id="tab-dashboard" class="tab-content">
+                <!-- Hero Section -->
+                <div class="glass-card p-8 mb-6 text-center">
+                    <h2 class="text-3xl font-bold text-white mb-2">Controle de Produtividade</h2>
+                    <p class="text-gray-300">Monitoramento em tempo real das atividades de suporte</p>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="glass-card p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i data-lucide="activity" class="w-5 h-5 text-purple-400 mr-2"></i>
+                            Status dos Eventos
+                        </h3>
+                        <div class="chart-container">
+                            <div class="pie-chart">73%</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mt-4 text-sm">
+                            <div class="flex justify-between">
+                                <span>Abertos:</span>
+                                <span class="text-red-400 font-semibold">12</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Fechados:</span>
+                                <span class="text-green-400 font-semibold">33</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-6">
+                        <h3 class="text-lg font-semibold mb-4 flex items-center">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-purple-400 mr-2"></i>
+                            Eventos por Atividade
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Up-Link Manual OLT´s</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="progress-bar w-16">
+                                        <div class="progress-fill bg-green-500" style="width: 80%"></div>
+                                    </div>
+                                    <span class="text-sm font-semibold w-6">12</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Atenuação OLT´s Remotas</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="progress-bar w-16">
+                                        <div class="progress-fill bg-yellow-500" style="width: 53%"></div>
+                                    </div>
+                                    <span class="text-sm font-semibold w-6">8</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Cabo Saturado</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="progress-bar w-16">
+                                        <div class="progress-fill bg-red-500" style="width: 33%"></div>
+                                    </div>
+                                    <span class="text-sm font-semibold w-6">5</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Up-Link Rádio</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="progress-bar w-16">
+                                        <div class="progress-fill bg-green-500" style="width: 100%"></div>
+                                    </div>
+                                    <span class="text-sm font-semibold w-6">15</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Proteções E-Line</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="progress-bar w-16">
+                                        <div class="progress-fill bg-green-500" style="width: 47%"></div>
+                                    </div>
+                                    <span class="text-sm font-semibold w-6">7</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Taxa de Erro</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="progress-bar w-16">
+                                        <div class="progress-fill bg-yellow-500" style="width: 20%"></div>
+                                    </div>
+                                    <span class="text-sm font-semibold w-6">3</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Eventos Abertos -->
+                <div class="glass-card p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i data-lucide="shield" class="w-5 h-5 text-red-400 mr-2"></i>
+                        Eventos Abertos - Requer Atenção
+                    </h3>
+                    <p class="text-gray-400 mb-4">Lista de todos os eventos em aberto que necessitam acompanhamento</p>
+                    
+                    <div class="space-y-3">
+                        <div class="event-item">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <span class="status-badge bg-purple-600 text-white">EV-2025-001</span>
+                                    <div>
+                                        <p class="font-medium">OLT-SP-001</p>
+                                        <p class="text-sm text-gray-400">São Paulo</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-sm font-mono">-29.2 dBm</span>
+                                    <span class="status-badge status-critical">Crítico</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="event-item">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <span class="status-badge bg-purple-600 text-white">EV-2025-003</span>
+                                    <div>
+                                        <p class="font-medium">OLT-RJ-045</p>
+                                        <p class="text-sm text-gray-400">Rio de Janeiro</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-sm font-mono">-27.8 dBm</span>
+                                    <span class="status-badge status-warning">Alto</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="event-item">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <span class="status-badge bg-purple-600 text-white">EV-2025-007</span>
+                                    <div>
+                                        <p class="font-medium">RADIO-MG-12</p>
+                                        <p class="text-sm text-gray-400">Belo Horizonte</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-sm font-mono">-26.1 dBm</span>
+                                    <span class="status-badge bg-yellow-500 text-white">Médio</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="event-item">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <span class="status-badge bg-purple-600 text-white">EV-2025-012</span>
+                                    <div>
+                                        <p class="font-medium">OLT-PR-089</p>
+                                        <p class="text-sm text-gray-400">Curitiba</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-sm font-mono">-25.3 dBm</span>
+                                    <span class="status-badge status-active">Baixo</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-purple-500/10 flex justify-between text-sm">
+                        <span>Total de eventos abertos:</span>
+                        <span class="font-semibold text-red-400">12 eventos</span>
+                    </div>
+                </div>
+
+                <!-- Activities Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="activity-card" onclick="showTab('uplink-manual')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="radio" class="w-5 h-5 text-purple-400"></i>
+                                <h4 class="font-medium">Up-Link Manual OLT´s Remotas</h4>
+                            </div>
+                            <span class="status-badge status-active">12</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">Controle de conectividade das OLTs remotas</p>
+                    </div>
+                    
+                    <div class="activity-card" onclick="showTab('attenuation')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-purple-400"></i>
+                                <h4 class="font-medium">Atenuação OLT´s Remotas</h4>
+                            </div>
+                            <span class="status-badge status-warning">8</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">Monitoramento de níveis de atenuação</p>
+                    </div>
+                    
+                    <div class="activity-card" onclick="showTab('cable-saturation')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="cable" class="w-5 h-5 text-purple-400"></i>
+                                <h4 class="font-medium">Ocupação de Cabo Saturado</h4>
+                            </div>
+                            <span class="status-badge status-critical">5</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">Análise de saturação de cabos</p>
+                    </div>
+                    
+                    <div class="activity-card" onclick="showTab('radio-uplink')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="antenna" class="w-5 h-5 text-purple-400"></i>
+                                <h4 class="font-medium">Up-Link Rádio</h4>
+                            </div>
+                            <span class="status-badge status-active">15</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">Controle de enlaces de rádio</p>
+                    </div>
+                    
+                    <div class="activity-card" onclick="showTab('eline-protection')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="shield" class="w-5 h-5 text-purple-400"></i>
+                                <h4 class="font-medium">Proteções E-Line</h4>
+                            </div>
+                            <span class="status-badge status-active">7</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">Monitoramento de proteções E-Line</p>
+                    </div>
+                    
+                    <div class="activity-card" onclick="showTab('error-rate')">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="activity" class="w-5 h-5 text-purple-400"></i>
+                                <h4 class="font-medium">Taxa de Erro</h4>
+                            </div>
+                            <span class="status-badge status-warning">3</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">Controle de taxas de erro de transmissão</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Event Tab -->
+            <div id="tab-create-event" class="tab-content hidden">
+                <div class="glass-card p-6">
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i data-lucide="activity" class="w-6 h-6 text-purple-400"></i>
+                        <h2 class="text-xl font-bold gradient-text">Registro de Novo Evento</h2>
+                    </div>
+                    <p class="text-gray-400 mb-6">Cadastre um novo evento para controle de produtividade e acompanhamento</p>
+
+                    <form id="eventForm" class="space-y-6">
+                        <!-- Linha 1: Informações básicas -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">
+                                    Número do Evento <span class="text-red-400">*</span>
+                                </label>
+                                <input type="text" name="eventNumber" placeholder="EV-2025-001" class="glass-input w-full" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">
+                                    <i data-lucide="signal" class="inline w-4 h-4 mr-1"></i>
+                                    Hostname do Equipamento <span class="text-red-400">*</span>
+                                </label>
+                                <input type="text" name="hostname" placeholder="OLT-SP-001" class="glass-input w-full" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">
+                                    <i data-lucide="map-pin" class="inline w-4 h-4 mr-1"></i>
+                                    Cidade <span class="text-red-400">*</span>
+                                </label>
+                                <input type="text" name="city" placeholder="São Paulo" class="glass-input w-full" required>
+                            </div>
+                        </div>
+
+                        <!-- Linha 2: Coordenadas e Status -->
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Latitude</label>
+                                <input type="text" name="latitude" placeholder="-23.5505" class="glass-input w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Longitude</label>
+                                <input type="text" name="longitude" placeholder="-46.6333" class="glass-input w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Tipo de Evento</label>
+                                <select name="eventType" class="glass-input w-full">
+                                    <option value="">Selecionar tipo</option>
+                                    <option value="atenuacao">Tratativa de Atenuação</option>
+                                    <option value="taxa-erro">Taxa de Erro</option>
+                                    <option value="uplink-manual">Up-Link Manual</option>
+                                    <option value="uplink-radio">Up-Link Rádio</option>
+                                    <option value="eline-protection">Proteção E-Line</option>
+                                    <option value="cabo-saturado">Cabo Saturado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Status</label>
+                                <select name="status" class="glass-input w-full">
+                                    <option value="">Selecionar status</option>
+                                    <option value="aberto">🔴 Aberto</option>
+                                    <option value="fechado">🟢 Fechado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Status Detalhado</label>
+                                <input type="text" name="eventStatus" placeholder="Em análise" class="glass-input w-full">
+                            </div>
+                        </div>
+
+                        <!-- Linha 3: Medições técnicas -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Atenuação (dBm)</label>
+                                <input type="number" name="attenuationDbm" placeholder="-25.5" step="0.1" class="glass-input w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Limiar da Rota/Equipamento</label>
+                                <input type="number" name="threshold" placeholder="-28.0" step="0.1" class="glass-input w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">
+                                    <i data-lucide="user" class="inline w-4 h-4 mr-1"></i>
+                                    Técnico Responsável <span class="text-red-400">*</span>
+                                </label>
+                                <input type="text" name="technician" placeholder="João Silva" class="glass-input w-full" required>
+                            </div>
+                        </div>
+
+                        <!-- Controle de Reincidência -->
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-2">
+                                <button type="button" id="recurrentBtn" class="btn-outline flex items-center space-x-2" onclick="toggleRecurrent()">
+                                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                                    <span>Marcar como Reincidente</span>
+                                </button>
+                                <span id="recurrentBadge" class="status-badge status-critical hidden">Falha em menos de 30 dias</span>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium mb-2">
+                                    Ações de Resolução <span id="recurrentLabel"></span>
+                                </label>
+                                <textarea 
+                                    name="resolutionActions" 
+                                    id="resolutionActions"
+                                    placeholder="Descreva as ações tomadas ou planejadas..."
+                                    rows="4"
+                                    class="glass-input w-full resize-none"
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Botões de Ação -->
+                        <div class="flex justify-end space-x-3 pt-4">
+                            <button type="button" class="btn-outline" onclick="clearForm()">
+                                Limpar Formulário
+                            </button>
+                            <button type="submit" class="btn-primary">
+                                <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
+                                Registrar Evento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Activity Tabs (simplified) -->
+            <div id="tab-uplink-manual" class="tab-content hidden">
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold gradient-text mb-4">Controle de Up-Link Manual OLT´s Remotas</h2>
+                    <p class="text-gray-400 mb-6">Monitoramento e controle de conectividade das OLTs remotas</p>
+                    <div class="text-center py-12">
+                        <i data-lucide="radio" class="w-16 h-16 text-purple-400 mx-auto mb-4"></i>
+                        <p class="text-gray-400">Funcionalidade em desenvolvimento</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-attenuation" class="tab-content hidden">
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold gradient-text mb-4">Controle de Atenuação OLT´s Remotas</h2>
+                    <p class="text-gray-400 mb-6">Monitoramento de níveis de atenuação dos equipamentos</p>
+                    <div class="text-center py-12">
+                        <i data-lucide="trending-up" class="w-16 h-16 text-purple-400 mx-auto mb-4"></i>
+                        <p class="text-gray-400">Funcionalidade em desenvolvimento</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-cable-saturation" class="tab-content hidden">
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold gradient-text mb-4">Ocupação de Cabo Saturado</h2>
+                    <p class="text-gray-400 mb-6">Análise e controle de saturação de cabos de rede</p>
+                    <div class="text-center py-12">
+                        <i data-lucide="cable" class="w-16 h-16 text-purple-400 mx-auto mb-4"></i>
+                        <p class="text-gray-400">Funcionalidade em desenvolvimento</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-radio-uplink" class="tab-content hidden">
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold gradient-text mb-4">Controle Up-Link Rádio</h2>
+                    <p class="text-gray-400 mb-6">Gerenciamento de enlaces de comunicação via rádio</p>
+                    <div class="text-center py-12">
+                        <i data-lucide="antenna" class="w-16 h-16 text-purple-400 mx-auto mb-4"></i>
+                        <p class="text-gray-400">Funcionalidade em desenvolvimento</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-eline-protection" class="tab-content hidden">
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold gradient-text mb-4">Controle Proteções E-Line</h2>
+                    <p class="text-gray-400 mb-6">Monitoramento de sistemas de proteção E-Line</p>
+                    <div class="text-center py-12">
+                        <i data-lucide="shield" class="w-16 h-16 text-purple-400 mx-auto mb-4"></i>
+                        <p class="text-gray-400">Funcionalidade em desenvolvimento</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-error-rate" class="tab-content hidden">
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold gradient-text mb-4">Controle de Taxa de Erro</h2>
+                    <p class="text-gray-400 mb-6">Monitoramento e análise de taxas de erro de transmissão</p>
+                    <div class="text-center py-12">
+                        <i data-lucide="activity" class="w-16 h-16 text-purple-400 mx-auto mb-4"></i>
+                        <p class="text-gray-400">Funcionalidade em desenvolvimento</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-report" class="tab-content hidden">
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold gradient-text mb-4">Relatório Final</h2>
+                    <p class="text-gray-400 mb-6">Relatório consolidado de todas as atividades</p>
+                    <div class="text-center py-12">
+                        <i data-lucide="bar-chart" class="w-16 h-16 text-purple-400 mx-auto mb-4"></i>
+                        <p class="text-gray-400">Funcionalidade em desenvolvimento</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        let isRecurrent = false;
+
+        // Login functionality
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (email === 'Luiz.porta@gmail.com' && password === 'Admin2025') {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('dashboardScreen').classList.remove('hidden');
+                document.getElementById('userEmail').textContent = email;
+                showNotification('Login realizado com sucesso!', 'success');
+            } else {
+                showNotification('Email ou senha incorretos. Entre em contato com o administrador.', 'error');
+            }
+        });
+
+        // Tab functionality
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            
+            // Add active class to clicked button
+            event.target.closest('.tab-button').classList.add('active');
+        }
+
+        // Logout functionality
+        function logout() {
+            document.getElementById('dashboardScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+            showNotification('Logout realizado com sucesso!', 'success');
+        }
+
+        // Event form functionality
+        function toggleRecurrent() {
+            isRecurrent = !isRecurrent;
+            const btn = document.getElementById('recurrentBtn');
+            const badge = document.getElementById('recurrentBadge');
+            const actions = document.getElementById('resolutionActions');
+            const label = document.getElementById('recurrentLabel');
+            
+            if (isRecurrent) {
+                btn.classList.remove('btn-outline');
+                btn.classList.add('status-badge', 'status-critical');
+                badge.classList.remove('hidden');
+                actions.value = 'Equipamento reincidente - Falha em menos de 30 dias. Ações: 1) Verificar histórico completo, 2) Análise de causa raiz, 3) Substituição preventiva se necessário';
+                actions.readOnly = true;
+                label.textContent = '(Pré-definidas para reincidentes)';
+            } else {
+                btn.classList.add('btn-outline');
+                btn.classList.remove('status-badge', 'status-critical');
+                badge.classList.add('hidden');
+                actions.value = '';
+                actions.readOnly = false;
+                label.textContent = '';
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('eventForm').reset();
+            isRecurrent = false;
+            const btn = document.getElementById('recurrentBtn');
+            const badge = document.getElementById('recurrentBadge');
+            const actions = document.getElementById('resolutionActions');
+            const label = document.getElementById('recurrentLabel');
+            
+            btn.classList.add('btn-outline');
+            btn.classList.remove('status-badge', 'status-critical');
+            badge.classList.add('hidden');
+            actions.readOnly = false;
+            label.textContent = '';
+        }
+
+        // Event form submit
+        document.getElementById('eventForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const eventData = Object.fromEntries(formData);
+            
+            console.log('Evento registrado:', eventData);
+            showNotification(`Evento ${eventData.eventNumber} foi criado com sucesso!`, 'success');
+            clearForm();
+        });
+
+        // Notification system
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white z-50 ${
+                type === 'success' ? 'bg-green-600' : 'bg-red-600'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show login screen by default
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('dashboardScreen').classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
